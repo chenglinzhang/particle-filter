@@ -32,31 +32,28 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
 	if (is_initialized) return;
 
-	// number of particles to generate
-	num_particles = NUM_PARTICLES;
-	particles.resize(num_particles);
-
-	// weights
-	weights.resize(num_particles);
+	// random number generator
+	default_random_engine gen;
 
 	// normal (Gaussian) distribution for x, y, and theta
 	normal_distribution<double> dist_x(x, std[0]);	
 	normal_distribution<double> dist_y(y, std[1]);
 	normal_distribution<double> dist_theta(theta, std[2]);
 
-	// random number generator
-	default_random_engine gen;
+	// number of particles to generate
+	num_particles = NUM_PARTICLES;
+	particles.resize(num_particles);
+
 	// generate particles		
-	for (int i = 0; i < num_particles; i++) {
-		Particle p = particles[i];
-		p.id = i;
+	for (auto &p: particles) {
 		p.x = dist_x(gen);
 		p.y = dist_y(gen);
 		p.theta = dist_theta(gen);
 		p.weight = 1.0;
-		// init weights
-		weights[i] = 1.0;
 	}
+
+	// weights
+	weights.resize(num_particles);
 
 	// init flag up
 	is_initialized = true;
@@ -68,13 +65,13 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
+	// random number generator
+	default_random_engine gen;		
+
 	// normal (Gaussian) distribution for x, y, and theta
 	normal_distribution<double> dist_x(0.0, std_pos[0]);	
 	normal_distribution<double> dist_y(0.0, std_pos[1]);
 	normal_distribution<double> dist_theta(0.0, std_pos[2]);
-
-	// random number generator
-	default_random_engine gen;		
 
 	for (auto &p: particles) {
 		// check yaw rate
@@ -154,7 +151,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		dataAssociation(landmarks_in_range, mapped_observations);
 
 		// 4. update particle weight
-		p.weight = 1.0;	
+		particles[i].weight = 1.0;	
+		// p.weight = 1.0; // won't set particles[i].weight
 		for (auto &m: mapped_observations) {
 			// nearest landmark
 			const LandmarkObs *nearest_landmark = nullptr;
@@ -171,12 +169,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				double yterm = pow(m.y - nearest_landmark->y, 2) / (2 * pow(std_landmark[1], 2));
 				double w = exp(-(xterm + yterm)) / (2 * M_PI * std_landmark[0] * std_landmark[1]);
 				// account for computing errors
-				p.weight *= (w == 0.0 ? EPS : w);
+				particles[i].weight *= (w == 0.0 ? EPS : w);	
+				// p.weight *= (w == 0.0 ? EPS : w); // won't set particles[i].weight
 			}
 		}
 
 		// keep updated weight
-		weights[i] = p.weight;
+		weights[i] = particles[i].weight;
 	}	
 }
 
@@ -185,7 +184,6 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
-	// std::default_random_engine gen;
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
