@@ -33,7 +33,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	if (is_initialized) return;
 
 	// random number generator
-	default_random_engine gen;
+	static default_random_engine gen;
 
 	// normal (Gaussian) distribution for x, y, and theta
 	normal_distribution<double> dist_x(x, std[0]);	
@@ -66,7 +66,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
 	// random number generator
-	default_random_engine gen;		
+	static default_random_engine gen;		
 
 	// normal (Gaussian) distribution for x, y, and theta
 	normal_distribution<double> dist_x(0.0, std_pos[0]);	
@@ -184,8 +184,8 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
 
 	std::discrete_distribution<> dist(weights.begin(), weights.end());
 
